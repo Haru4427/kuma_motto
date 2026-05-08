@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const KumaMottoApp());
@@ -14,15 +16,14 @@ class KumaMottoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xFFD32F2F), // Kumamoto Red accent
-        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFD32F2F), // Kumamoto Red
+          brightness: Brightness.light,
+          surface: const Color(0xFFF8F9FA), // Off-white clean background
+          // background: const Color(0xFFF8F9FA),
+        ),
+        textTheme: GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFFD32F2F),
-        brightness: Brightness.dark,
-      ),
-      themeMode: ThemeMode.system, // Adapts to user's device setting
       home: const MainScreen(),
     );
   }
@@ -38,41 +39,134 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // 3 tabs as requested in the specification
   final List<Widget> _screens = [
     const HomeChatScreen(),
-    const PlanScreen(),
-    const GuideCardScreen(),
+    const PlaceholderScreen(title: 'Trip Plan & Navigation', icon: Icons.map_outlined),
+    const PlaceholderScreen(title: 'Accessibility Guide Card', icon: Icons.badge_outlined),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Home (Chat)',
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: Stack(
+        children: [
+          // Subtle background decoration (Mesh gradient feel)
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFD32F2F).withOpacity(0.05),
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Plan',
+          Positioned(
+            bottom: 100,
+            right: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue.withOpacity(0.03),
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.badge_outlined),
-            selectedIcon: Icon(Icons.badge),
-            label: 'Guide Card',
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+            child: Container(color: Colors.white.withOpacity(0.1)),
+          ),
+          
+          // Main Content
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: _screens[_currentIndex],
+            ),
+          ),
+          
+          // Floating Glass Dock Navigation
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _buildFloatingDock(),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingDock() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDockItem(0, Icons.chat_bubble_outline, Icons.chat_bubble, 'Chat'),
+              const SizedBox(width: 16),
+              _buildDockItem(1, Icons.map_outlined, Icons.map, 'Plan'),
+              const SizedBox(width: 16),
+              _buildDockItem(2, Icons.badge_outlined, Icons.badge, 'Card'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDockItem(int index, IconData outlineIcon, IconData solidIcon, String label) {
+    final isSelected = _currentIndex == index;
+    final color = isSelected ? const Color(0xFFD32F2F) : Colors.grey.shade500;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFD32F2F).withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(isSelected ? solidIcon : outlineIcon, color: color, size: 22),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -88,7 +182,6 @@ class HomeChatScreen extends StatefulWidget {
 class _HomeChatScreenState extends State<HomeChatScreen> {
   final TextEditingController _controller = TextEditingController();
   
-  // Mock data for AI Chat interface
   final List<Map<String, dynamic>> _messages = [
     {
       'isUser': false,
@@ -109,51 +202,75 @@ class _HomeChatScreenState extends State<HomeChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'AI Concierge',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.wb_sunny_outlined),
-            onPressed: () {
-              // TODO: Integrate OpenWeatherMap API
+    return Column(
+      children: [
+        _buildGlassAppBar(),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 120),
+            itemCount: _messages.length,
+            itemBuilder: (context, index) {
+              final message = _messages[index];
+              return _buildMessageBubble(
+                message['text'] as String,
+                message['time'] as String,
+                message['isUser'] as bool,
+              );
             },
-            tooltip: 'Weather Info',
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isUser = message['isUser'] as bool;
-                return _buildMessageBubble(
-                  message['text'] as String,
-                  message['time'] as String,
-                  isUser,
-                  theme,
-                );
-              },
+        ),
+        _buildGlassInputArea(),
+      ],
+    );
+  }
+
+  Widget _buildGlassAppBar() {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.6),
+            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.black,
+                      child: Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'AI Concierge',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.wb_sunny_outlined, color: Colors.black54),
+                  onPressed: () {},
+                  tooltip: 'Weather Info',
+                ),
+              ],
             ),
           ),
-          _buildInputArea(theme),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildMessageBubble(String text, String time, bool isUser, ThemeData theme) {
+  Widget _buildMessageBubble(String text, String time, bool isUser) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(
@@ -161,14 +278,10 @@ class _HomeChatScreenState extends State<HomeChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(
-                Icons.smart_toy,
-                size: 20,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.black,
+              child: Icon(Icons.smart_toy, size: 18, color: Colors.white),
             ),
             const SizedBox(width: 12.0),
           ],
@@ -177,42 +290,42 @@ class _HomeChatScreenState extends State<HomeChatScreen> {
               crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
                   decoration: BoxDecoration(
-                    color: isUser 
-                        ? theme.colorScheme.primary 
-                        : theme.colorScheme.surfaceContainerHighest,
+                    color: isUser ? const Color(0xFFD32F2F) : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20.0),
-                      topRight: const Radius.circular(20.0),
-                      bottomLeft: isUser ? const Radius.circular(20.0) : Radius.zero,
-                      bottomRight: isUser ? Radius.zero : const Radius.circular(20.0),
+                      topLeft: const Radius.circular(24.0),
+                      topRight: const Radius.circular(24.0),
+                      bottomLeft: isUser ? const Radius.circular(24.0) : Radius.zero,
+                      bottomRight: isUser ? Radius.zero : const Radius.circular(24.0),
                     ),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      )
+                      if (!isUser)
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
                     ],
                   ),
                   child: Text(
                     text,
                     style: TextStyle(
                       fontSize: 15,
-                      height: 1.4,
-                      color: isUser 
-                          ? theme.colorScheme.onPrimary 
-                          : theme.colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                      color: isUser ? Colors.white : Colors.black87,
                     ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black38,
+                    ),
                   ),
                 ),
               ],
@@ -221,13 +334,9 @@ class _HomeChatScreenState extends State<HomeChatScreen> {
           if (isUser) ...[
             const SizedBox(width: 12.0),
             CircleAvatar(
-              radius: 18,
-              backgroundColor: theme.colorScheme.secondaryContainer,
-              child: Icon(
-                Icons.person,
-                size: 20,
-                color: theme.colorScheme.onSecondaryContainer,
-              ),
+              radius: 16,
+              backgroundColor: Colors.grey.shade200,
+              child: const Icon(Icons.person, size: 18, color: Colors.black54),
             ),
           ],
         ],
@@ -235,121 +344,109 @@ class _HomeChatScreenState extends State<HomeChatScreen> {
     );
   }
 
-  Widget _buildInputArea(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+  Widget _buildGlassInputArea() {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),
-              onPressed: () {},
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: 'Ask anything about Kumamoto...',
-                  hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 12.0,
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline, color: Colors.black54),
+                  onPressed: () {},
+                ),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: 'Ask anything about Kumamoto...',
+                        hintStyle: TextStyle(color: Colors.black38),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 14.0,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12.0),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD32F2F).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8.0),
-            FloatingActionButton(
-              onPressed: () {
-                // TODO: Send message to Gemini API
-              },
-              elevation: 0,
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
-              shape: const CircleBorder(),
-              mini: true,
-              child: const Icon(Icons.send_rounded, size: 20),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ---------------------------------------------------------
-// Placeholder for Plan Screen (Hybrid plan creation & Maps)
-// ---------------------------------------------------------
-class PlanScreen extends StatelessWidget {
-  const PlanScreen({Key? key}) : super(key: key);
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  
+  const PlaceholderScreen({Key? key, required this.title, required this.icon}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trip Plan & Navigation'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.map_outlined, size: 80, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-            const SizedBox(height: 16),
-            const Text(
-              'Map & Plan Generation\nwill be implemented here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.black12),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------
-// Placeholder for Guide Card Screen (Accessibility for bus drivers)
-// ---------------------------------------------------------
-class GuideCardScreen extends StatelessWidget {
-  const GuideCardScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accessibility Guide Card'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.badge_outlined, size: 80, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-            const SizedBox(height: 16),
-            const Text(
-              'Full-screen cards for bus drivers\nwill be implemented here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'This beautiful white-themed page\nwill be implemented here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.black45),
+          ),
+        ],
       ),
     );
   }
